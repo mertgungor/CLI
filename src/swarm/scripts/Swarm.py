@@ -97,8 +97,9 @@ class Swarm:
                     for j in self.logs[i]:
 
                         writer_csv.writerow(j.values())
+                    print("LOGGING COMPLETED !!!")
             except LookupError:
-                print("err")
+                print("FILE COULD NOT OPENED")
 
     def add_log(self, speed, time, position, id):
         self.log["speed"] = speed
@@ -186,8 +187,9 @@ class Swarm:
 
         attractive_force_x = (target_pose[0] - self.agents[id].position()[0])*attractive_constant
         attractive_force_y = (target_pose[1] - self.agents[id].position()[1])*attractive_constant
+        attractive_force_z = (target_pose[2] - self.agents[id].position()[2])*attractive_constant
 
-        return min(max(float(attractive_force_x),-1*speed_limit),speed_limit), min(max(float(attractive_force_y),-1*speed_limit),speed_limit)
+        return min(max(float(attractive_force_x),-1*speed_limit),speed_limit), min(max(float(attractive_force_y),-1*speed_limit),speed_limit), min(max(float(attractive_force_z),-1*speed_limit),speed_limit)
 
     def attractive_force_pid(self, id, target_pose, attractive_constant = 2):
 
@@ -240,21 +242,25 @@ class Swarm:
     def repulsive_force(self,id, repulsive_constant =-0.3,repulsive_threshold = 1.5): # repuslsive constant must be negative
         repulsive_force_x = 0
         repulsive_force_y = 0
+        repulsive_force_z = 0
         speed_limit = 0.8 # must be float
 
         for i in range(len(self.agents)):
                 if i == id:
                     continue
+                z_distance = self.agents[id].position()[2] - self.agents[i].position()[2]
                 y_distance = self.agents[id].position()[1] - self.agents[i].position()[1]
                 x_distance = self.agents[id].position()[0] - self.agents[i].position()[0]
 
-                d = ((y_distance**2) + (x_distance**2))**(1/2)
+                d = ((y_distance**2) + (x_distance**2) + (z_distance**2))**(1/2)
 
-                if d < repulsive_threshold and y_distance != 0 and x_distance != 0:
-                    repulsive_force_y += (1/(y_distance**2))*(1/repulsive_threshold - 1/y_distance)*repulsive_constant* math.copysign(1, y_distance)
-                    repulsive_force_x += (1/(x_distance**2))*(1/repulsive_threshold - 1/x_distance)*repulsive_constant* math.copysign(1, x_distance)
+                if d < repulsive_threshold and y_distance != 0 and x_distance != 0 and z_distance != 0:
+                    repulsive_force_z += (1/(z_distance**2))*(1/repulsive_threshold - 1/z_distance)*repulsive_constant
+                    if z_distance < 0.5:
+                        repulsive_force_y += (1/(y_distance**2))*(1/repulsive_threshold - 1/y_distance)*repulsive_constant
+                        repulsive_force_x += (1/(x_distance**2))*(1/repulsive_threshold - 1/x_distance)*repulsive_constant
 
-        return min(max(float(repulsive_force_x),-1*speed_limit),speed_limit), min(max(float(repulsive_force_y),-1*speed_limit),speed_limit)
+        return min(max(float(repulsive_force_x),-1*speed_limit),speed_limit), min(max(float(repulsive_force_y),-1*speed_limit),speed_limit), min(max(float(repulsive_force_z),-1*speed_limit),speed_limit)
 
 
     def single_potential_field(self, id, coordinates):
@@ -262,18 +268,20 @@ class Swarm:
         #for _ in range(4000):
         #print("id: {}  pose: {}".format(id, self.agents[id].position()))
 
-        attractive_force_x, attractive_force_y = self.attractive_force(target_pose=coordinates[id], id=id, attractive_constant = 5)
-        repulsive_force_x, repulsive_force_y = self.repulsive_force(id=id, repulsive_constant = 0)
+        attractive_force_x, attractive_force_y, attractive_force_z = self.attractive_force(target_pose=coordinates[id], id=id, attractive_constant = 5)
+        repulsive_force_x, repulsive_force_y, repulsive_force_z = self.repulsive_force(id=id, repulsive_constant = 0)
 
         vel_x = attractive_force_x + repulsive_force_x
         vel_y = attractive_force_y + repulsive_force_y
+        vel_z = attractive_force_z + repulsive_force_z
 
         turtleBot_constant = 0.1
         rotational_constant = 0.3
 
         if self.vehicle == "Crazyflie":
-            self.agents[id].cmdVelocityWorld(np.array([vel_x, vel_y, 0]), yawRate=0)
+            self.agents[id].cmdVelocityWorld(np.array([vel_x, vel_y, vel_z]), yawRate=0)
             self.timeHelper.sleep(0.001)
+            self.add_log("{}, {}, {}, ".format(vel_x, vel_y, 0), datetime.now(),"{}, {}, {}, ".format(self.agents[id].position()[0],self.agents[id].position()[1],self.agents[id].position()[2]),id)
 
         elif self.vehicle == "TurtleBot": 
             
@@ -366,7 +374,7 @@ class Swarm:
 
                 for i in range(len(self.agents)):
                     
-                    self.single_potential_field_pid(i, coordinates)
+                    self.single_potential_field(i, coordinates)
                     
             self.stop_all()
             self.timeHelper.sleep(4)         

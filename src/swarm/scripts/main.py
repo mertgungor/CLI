@@ -4,11 +4,18 @@ from Swarm import Swarm
 from TurtleBot import TurtleBot
 
 import numpy as np
+import os
 
+def clear_log():
+    for i in range(50):
+        try:
+            os.remove('./agent{}_logs.csv'.format(i))
+        except FileNotFoundError:
+            return
 
 if __name__ == "__main__":
-
-    uav_count = 6
+    clear_log()
+    uav_count = 5
     radius = 1.5
     vehicle1 = "Iris"
     vehicle2 = "Crazyflie"
@@ -22,6 +29,8 @@ if __name__ == "__main__":
     #swarm.go(np.array([0,radius,0]))
     #swarm.rotate()
     swarm.timeHelper.sleep(2)
+    swarm.form_3d(2, "prism")
+    #swarm.swarm_square(2)
     #swarm.form_pyramid()
     #swarm.add_agent_to_formation()
     #swarm.timeHelper.sleep(2)
@@ -41,4 +50,5 @@ if __name__ == "__main__":
     swarm.land()
     
     swarm.timeHelper.sleep(4)
+    #swarm.return_starting_pose()
     #swarm.return_starting_pose()

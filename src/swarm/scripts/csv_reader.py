@@ -25,7 +25,17 @@ X = []
 Y = []
 Z = []
 
-for j in range(5):
+num_of_agents = 0
+
+for i in range(50):
+    try:
+        file = open('./agent{}_logs.csv'.format(i))
+    except FileNotFoundError:
+        print(str(i) + "  ----------")
+        num_of_agents = i 
+        break
+
+for j in range(num_of_agents):
     file = open('./agent{}_logs.csv'.format(j))
     csv_reader = csv.reader(file)   
 
