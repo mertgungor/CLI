@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-from tokenize import group
-from typing import List
 import numpy as np
 import math
 import time
 from Iris import Iris
 from threading import Thread
-from copy import deepcopy
 import copy
 from munkres import Munkres
 from datetime import datetime
 import csv
+import random
 
 from TurtleBot import TurtleBot
 from pycrazyswarm import Crazyswarm
@@ -22,6 +20,7 @@ class Swarm:
         self.vehicle = vehicle
         self.radius = 2
         self.num_of_edges = 3
+        self.obstacles = {}
 
         self.log = {
     
@@ -41,7 +40,6 @@ class Swarm:
 
                 for i in range(len(self.agents)):
                     self.takeoff(i)
-                    print(self.agents[i].position()[0])
             else:
                 self.timeHelper = crazyswarm_class.timeHelper
             
@@ -54,7 +52,6 @@ class Swarm:
 
             for i in range(len(self.agents)):
                 pose = self.distance_to_pose(drone_a=self.agents[i], lat_b=simulation_origin_latitude, long_b=simulation_origin_longitude)
-                print(self.agents[i].id)
                 self.agents[i].set_starting_pose(pose[0], pose[1]) #Agent must be in the starting position (locally 0, 0) height does not matter
                 self.agents[i].position()
 
@@ -125,7 +122,7 @@ class Swarm:
 
         return angle if math.pi <=angle else -angle
 
-    def is_goal_reached(self, id, goal,error_radius=0.1):# 10 cm default error radius, goal is a numpy array
+    def is_goal_reached(self, id, goal,error_radius=0.2):# 10 cm default error radius, goal is a numpy array
         
         pose = self.agents[id].position()
 
@@ -160,9 +157,8 @@ class Swarm:
         angle = (360/num_of_edges)*0.0174532925 #radians 
         agent_angle = 0
 
-        for i in range(1,num_of_edges):
+        for i in range(num_of_edges):
             agent_angle = i*angle + rotation_angle*0.0174532925
-            print(i," ",agent_angle/0.017453292)
             vectors[i][0] = math.floor((radius*math.cos(agent_angle) + displacement[0]) * 1000)/ 1000
             vectors[i][1] = math.floor((radius*math.sin(agent_angle) + displacement[1]) * 1000)/ 1000
             vectors[i][2] = math.floor((height + displacement[2]) * 1000)/ 1000
@@ -239,11 +235,11 @@ class Swarm:
 
         return min(max(float(repulsive_force_x),-1*speed_limit),speed_limit), min(max(float(repulsive_force_y),-1*speed_limit),speed_limit)
 
-    def repulsive_force(self,id, repulsive_constant =-0.3,repulsive_threshold = 1.5): # repuslsive constant must be negative
+    def repulsive_force(self,id, repulsive_constant =-0.9,repulsive_threshold = 1.3): # repuslsive constant must be negative
         repulsive_force_x = 0
         repulsive_force_y = 0
         repulsive_force_z = 0
-        speed_limit = 0.8 # must be float
+        speed_limit = 0.5 # must be float
 
         for i in range(len(self.agents)):
                 if i == id:
@@ -254,11 +250,34 @@ class Swarm:
 
                 d = ((y_distance**2) + (x_distance**2) + (z_distance**2))**(1/2)
 
-                if d < repulsive_threshold and y_distance != 0 and x_distance != 0 and z_distance != 0:
-                    repulsive_force_z += (1/(z_distance**2))*(1/repulsive_threshold - 1/z_distance)*repulsive_constant
-                    if z_distance < 0.5:
-                        repulsive_force_y += (1/(y_distance**2))*(1/repulsive_threshold - 1/y_distance)*repulsive_constant
-                        repulsive_force_x += (1/(x_distance**2))*(1/repulsive_threshold - 1/x_distance)*repulsive_constant
+
+                if d < repulsive_threshold:
+                    if z_distance != 0:
+                        repulsive_force_z += (1/(z_distance**2))*(1/repulsive_threshold - 1/z_distance)*repulsive_constant * (-(z_distance) / abs(z_distance))
+                    if y_distance != 0:
+                        repulsive_force_y += (1/(y_distance**2))*(1/repulsive_threshold - 1/y_distance)*repulsive_constant * (-(y_distance) / abs(y_distance))
+                    if x_distance != 0:
+                        repulsive_force_x += (1/(x_distance**2))*(1/repulsive_threshold - 1/x_distance)*repulsive_constant * (-(x_distance) / abs(x_distance))
+
+        for obstacle in self.obstacles:
+                if i == id:
+                    continue
+                z_distance = self.agents[id].position()[2] - obstacle.position()[2]
+                y_distance = self.agents[id].position()[1] - obstacle.position()[1]
+                x_distance = self.agents[id].position()[0] - obstacle.position()[0]
+
+                z_distance = (z_distance - self.obstacles[obstacle]) if (z_distance > 0 )else (z_distance + self.obstacles[obstacle])
+                y_distance = (y_distance - self.obstacles[obstacle]) if (y_distance > 0 )else (y_distance + self.obstacles[obstacle])
+                x_distance = (x_distance - self.obstacles[obstacle]) if (x_distance > 0 )else (x_distance + self.obstacles[obstacle]) 
+
+            
+                if z_distance != 0 and abs(z_distance) < repulsive_threshold:
+                    repulsive_force_z += (1/(z_distance**2))*(1/repulsive_threshold - 1/abs(z_distance))*repulsive_constant * (-(z_distance) / abs(z_distance))
+                if y_distance != 0 and abs(y_distance) < repulsive_threshold:
+                    repulsive_force_y += (1/(y_distance**2))*(1/repulsive_threshold - 1/abs(y_distance))*repulsive_constant * (-(y_distance) / abs(y_distance))
+                if x_distance != 0 and abs(x_distance) < repulsive_threshold:
+                    repulsive_force_x += (1/(x_distance**2))*(1/repulsive_threshold - 1/abs(x_distance))*repulsive_constant * (-(x_distance) / abs(x_distance))
+
 
         return min(max(float(repulsive_force_x),-1*speed_limit),speed_limit), min(max(float(repulsive_force_y),-1*speed_limit),speed_limit), min(max(float(repulsive_force_z),-1*speed_limit),speed_limit)
 
@@ -269,7 +288,7 @@ class Swarm:
         #print("id: {}  pose: {}".format(id, self.agents[id].position()))
 
         attractive_force_x, attractive_force_y, attractive_force_z = self.attractive_force(target_pose=coordinates[id], id=id, attractive_constant = 5)
-        repulsive_force_x, repulsive_force_y, repulsive_force_z = self.repulsive_force(id=id, repulsive_constant = 0)
+        repulsive_force_x, repulsive_force_y, repulsive_force_z = self.repulsive_force(id=id)
 
         vel_x = attractive_force_x + repulsive_force_x
         vel_y = attractive_force_y + repulsive_force_y
@@ -318,7 +337,6 @@ class Swarm:
 
 
     def form_via_potential_field(self, radius): # uses potential field algorithm to form
-        print(self.formation_coordinates(radius=radius, num_of_edges=self.num_of_agents, rotation_angle=90))
         self.radius = radius
 
         coordinates = self.formation_coordinates(radius, self.num_of_agents)
@@ -353,8 +371,6 @@ class Swarm:
 
         coordinates = self.sort_coordinates(self.formation_coordinates(radius, num_of_edges, height, displacement))
 
-        print(coordinates)
-
         if self.vehicle == "Crazyflie":
             while not self.is_formed(coordinates):
             #for i in range(4000):
@@ -366,7 +382,6 @@ class Swarm:
             self.timeHelper.sleep(4)           
 
     def form_coordinates(self, coordinates): # uses potential field algorithm to form
-        print(coordinates)
         coordinates = self.sort_coordinates(coordinates)
 
         if self.vehicle == "Crazyflie":
@@ -388,15 +403,21 @@ class Swarm:
         swarm1 = Swarm(self.num_of_agents//2, self.vehicle, False, self.crazyswarm)
         swarm1.agents = self.crazyswarm.allcfs.crazyflies[0 : self.num_of_agents//2]
         swarm2 = Swarm(self.num_of_agents-self.num_of_agents//2, self.vehicle, False, self.crazyswarm)
-        swarm2.agents = self.crazyswarm.allcfs.crazyflies[self.num_of_agents//2 : ]
+        swarm2.agents = self.crazyswarm.allcfs.crazyflies[self.num_of_agents//2 : self.num_of_agents]
 
         swarm1.go((-2,-2,1))
         swarm2.go((2,2,1))
 
-        swarm1.form_polygon(3, 3, 1, np.array([-2,0,0]))
-        swarm2.form_polygon(3, 3, 1, np.array([2,0,0]))
-
+        swarm1.form_polygon(3, 3, 1, np.array([-2,-2,0]))
+        swarm2.form_polygon(3, 3, 1, np.array([2,2,0]))
+    
         return swarm1, swarm2
+
+    def obstacle_creator(self, num_obstacles):
+        for i in range(num_obstacles):
+            self.obstacles[self.agents[i]] = 0.1
+        self.agents = self.agents[num_obstacles:self.num_of_agents]
+        self.num_of_agents = self.num_of_agents-num_obstacles
     
     def add_drone(self,id):
    
