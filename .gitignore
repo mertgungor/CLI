@@ -1,0 +1,10 @@
+/devel
+/build
+### VisualStudioCode ###
+.vscode/*      # Maybe .vscode/**/* instead - see comments
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+src/swarm/scripts/agent*.csv
+
