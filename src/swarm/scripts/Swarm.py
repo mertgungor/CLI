@@ -418,6 +418,10 @@ class Swarm:
             self.obstacles[self.agents[i]] = 0.1
         self.agents = self.agents[num_obstacles:self.num_of_agents]
         self.num_of_agents = self.num_of_agents-num_obstacles
+
+    def obstacle_creator_without_drones(self, obstacle_list):
+        for obstacle in obstacle_list:
+            pass
     
     def add_drone(self,id):
    
