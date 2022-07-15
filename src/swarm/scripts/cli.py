@@ -22,7 +22,16 @@ if __name__ == "__main__":
     vehicle1 = "Iris"
     vehicle2 = "Crazyflie"
     swarm = Swarm(uav_count, vehicle2)
+
+    mission_numbers = """
+    1) 3D fromation
+    2) Add remove agent
+    2) Obstacle avoidance
+    3) Cargo
+    4) Fire fighting
+    """
     
+    print(mission_numbers)
     mission = int(input("Enter mission number: "))
 
     distance_between_agents = float(input("Distance between agents: "))
@@ -64,7 +73,7 @@ if __name__ == "__main__":
             if sub_mission == 5:
                 pass
     
-    if mission == 2:
+    elif mission == 2:
         sub_missions = """
         1: Add obstacle
         2: Remove last obstacle
@@ -73,6 +82,7 @@ if __name__ == "__main__":
         """
 
         obstacles = []
+        vector = []
 
         is_mission_running = True
 
@@ -99,5 +109,15 @@ if __name__ == "__main__":
                 vector = str(input("Position of the obstacle: "))
                 vector = vector.split(" ")
                 vector = np.array([float(vector[0]), float(vector[1]), float(vector[2])])
+
+                swarm.obstacle_creator_without_drones(obstacles)
+
+            if sub_mission == 4:
                 swarm.go(vector)
 
+    elif mission == 3:
+        pass
+    elif mission == 4:
+        pass
+    elif mission == 5:
+        pass

@@ -262,9 +262,9 @@ class Swarm:
         for obstacle in self.obstacles:
                 if i == id:
                     continue
-                z_distance = self.agents[id].position()[2] - obstacle.position()[2]
-                y_distance = self.agents[id].position()[1] - obstacle.position()[1]
-                x_distance = self.agents[id].position()[0] - obstacle.position()[0]
+                z_distance = self.agents[id].position()[2] - obstacle[2]
+                y_distance = self.agents[id].position()[1] - obstacle[1]
+                x_distance = self.agents[id].position()[0] - obstacle[0]
 
                 z_distance = (z_distance - self.obstacles[obstacle]) if (z_distance > 0 )else (z_distance + self.obstacles[obstacle])
                 y_distance = (y_distance - self.obstacles[obstacle]) if (y_distance > 0 )else (y_distance + self.obstacles[obstacle])
@@ -420,8 +420,7 @@ class Swarm:
         self.num_of_agents = self.num_of_agents-num_obstacles
 
     def obstacle_creator_without_drones(self, obstacle_list):
-        for obstacle in obstacle_list:
-            pass
+        self.obstacles = obstacle_list
     
     def add_drone(self,id):
    

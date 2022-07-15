@@ -15,26 +15,26 @@ def clear_log():
 
 if __name__ == "__main__":
     clear_log()
-    uav_count = 10
-    radius = 3
+    uav_count = 5
+    radius = 1
     vehicle1 = "Iris"
     vehicle2 = "Crazyflie"
     swarm = Swarm(uav_count, vehicle2)
     #swarm.star_formation()
     swarm.timeHelper.sleep(0.5)
-    swarm.form_via_potential_field(radius)
-    swarm.timeHelper.sleep(1)
-    swarm.go([3, 3, 0])
-    swarm.obstacle_creator(5)
-    swarm.form_polygon(2, 5, 1, [-3, -3, 0])
-    swarm.form_polygon(2, 5, 1, [3, 3, 0])
+    # swarm.form_via_potential_field(radius)
+    # swarm.timeHelper.sleep(1)
+    # swarm.go([3, 3, 0])
+    # swarm.obstacle_creator(5)
+    # swarm.form_polygon(2, 5, 1, [-3, -3, 0])
+    # swarm.form_polygon(2, 5, 1, [3, 3, 0])
     #swarm.go(np.array([radius,0,0]))
     #swarm.go(np.array([0,-radius,0]))
     #swarm.go(np.array([-radius,0,0]))
     #swarm.go(np.array([0,radius,0]))
     #swarm.rotate()
     swarm.timeHelper.sleep(2)
-    #swarm.form_3d(2, "prism")
+    swarm.form_3d(2, "prism")
     #swarm.swarm_square(2)
     #swarm.form_pyramid()
     #swarm.add_agent_to_formation()
